@@ -9,57 +9,90 @@
  * author: Csongor Freytag
  */
 
-//Choose a first piture from directory  // jó lenne egy gyors elemzés funkció 8bit, telep méret 1x, otsu, freehand, watershed, t
-//3 mód közüllehssen választani batch; fusson a laplacian; ne fusson a laplacian
-
 // settings before run
-Dialog.create("Options");
-	Dialog.addMessage("Valami rövid szar");
-	Dialog.addCheckbox("Batch mode", false); //az első kép beállításai alapján menjen végig a többi képen, nincs kivágás az eredmény ellenőrizhető
-	Dialog.addMessage("Use if colonies are less than 1mm");
+Dialog.create("Settings");
+	Dialog.addMessage("Choose your options!");
+	Dialog.addCheckbox("Batch mode", false);
+	Dialog.addMessage("Use if colonies are less than 1mm in diameter");
 	Dialog.addCheckbox("Laplacian filter", false);
 Dialog.show();
 
 batch=Dialog.getCheckbox();
 filter=Dialog.getCheckbox();
 
+//Choose a first piture from your directory  
 // open image and collect infos
 open("");
 name=getInfo("image.filename");
 print("refrence picture:" +name);
-dir = getInfo("image.directory");
-list = getFileList(dir);
+dir=getInfo("image.directory");
+list=getFileList(dir);
 run("FeatureJ Options", "progress log");
-
-// the size selection need to just once // ehelyet legyen választható hogy csak egyszer vagy minden képenhez külön
-	// Draw around a small colony // legyen ellenőrzés hogy ne lehessen ez az érték 0
+if (batch==1) {
+	// the size selection need to just once
+	// Draw around a small colony 
 	setTool("oval");
 	waitForUser("Select smallest colony.");
 	getStatistics(area1);
+	while (area1 > 2000) {//error checking
+			setTool("oval");
+			waitForUser("WARNING!!!", "Missing selected colony!");
+			getStatistics(area1);
+		}
 	print("smallest colony" +area1);
-		s = area1;
-	
+		s=area1;	
 	// Draw around large colony 
-	waitForUser("Select largest colony.");	
+	waitForUser("Select largest colony.");
 	getStatistics(area2);
+	while (area2<=area1) {//error checking
+			setTool("oval");
+			waitForUser("WARNING!!!", "Missing selected colony!");
+			getStatistics(area2);
+		}
 	print("largest colony" +area2);
-		l = area2;
-	
+		l=area2;
+}
 for (i = 0; i < lengthOf(list); i++) {
 	filename = list[i];
 	print(filename);
-	
+	if (batch==0) {
+		setTool("oval");
+		waitForUser("Select smallest colony.");
+		getStatistics(area1);
+		while (area1 > 2000) {
+			setTool("oval");
+			waitForUser("WARNING!!!", "Missing selected colony!");
+			getStatistics(area1);
+		}
+		print("smallest colony" +area1);
+			s = area1;	
+		waitForUser("Select largest colony.");
+		getStatistics(area2);
+		while (area2<=area1) {
+			setTool("oval");
+			waitForUser("WARNING!!!", "Missing selected colony!");
+			getStatistics(area2);
+		}
+		print("largest colony" +area2);
+			l = area2;
+	}	
  	// select the whole petri dish
  	setTool("oval");
  	run("Scale to Fit");
 	waitForUser("Crop image", "The colonies are in an oval and are ready for processing.");
+	getStatistics(area3);
+	while (area3 <= area2) {
+		setTool("oval");
+		waitForUser("WARNING!!!", "The colonies are not in an oval and are not ready for processing.");
+		getStatistics(area3);
+	}
 	setBackgroundColor(75, 75, 75);
 	run("Clear Outside");
 	run("Crop");
 	run("8-bit");
 	
 	if (filter==1) {
-		// Laplacian filter: try with 3.5 write 0 or deselect computing image if you wanna switchit off // ha nem megy a laplacian nem fut le az automata mentés
+		// Laplacian filter: try with 3.5 write 0 or deselect computing image if you wanna switch it off
 		run("FeatureJ Laplacian");
 	
 		// top hat to remove dust and small particles
@@ -70,39 +103,44 @@ for (i = 0; i < lengthOf(list); i++) {
 	// set Threshold	
 	run("Threshold...");
 	setAutoThreshold("Otsu");
-	waitForUser("set Threshold..", "I selected almost all colony.");
-	
-	
+	waitForUser("set Threshold..", "I selected almost all colony.");// itt kell még kivédeni az elbaszást
 	// count colonies with analyse particles
 	run("Convert to Mask");
 	run("Watershed");
-	
-	//optional pont to a 2nd crop if needed
-	ans=getBoolean("Would you like to remove edges or non-colony spots?"); 
-	if (ans==1) {
-		setTool("freehand");
-		setBackgroundColor(255, 255, 255);
-		waitForUser("Crop image", "Draw around colonies with freehand and comand will clear outside.");
-		run("Clear Outside");
-		}
-	//it's run automaticlly with the values from the first step  // ez legyen újra indítható
-	run("Analyze Particles...", "size=&s-&l  circularity=0.7-1.00 show=Overlay summarize overlay")
+	//it's run automaticlly with the values from the first step
+	run("Analyze Particles...", "size=&s-&l  circularity=0.6-1.00 show=Overlay summarize overlay");
 	
 	//check the result 
-	ans1=getBoolean ("Is it good?");
-	while (ans1==0) {
+	choose=newArray("add ROI a few", "Analyze Part... again", "freehand tool", "minden fasza" );
+	Dialog.create("Check the result!");
+		Dialog.addRadioButtonGroup("Choose an option!", choose, 4, 1, "minden fasza");
+		
+	Dialog.show();
+	print("válasz: "+Dialog.getRadioButton);
+	 
+	good=getBoolean ("Is it good?"); // e helyett legyen egy választás fusson freehand vagy rio add vagy analyz p  again 
+	while (good==0) {
 		run("Analyze Particles...");
-		ans1=getBoolean ("Is it good?");
+		good=getBoolean ("Is it good?");
 	}
-
-	close();
-	name2=getInfo("image.filename");
-	if (name==name2) {
-		run("Open Next");
-		}
-		else {
-		run("Open Next");
+	
+	//run("To ROI Manager");
+	//nROIs = roiManager("count");
+	//print(nROIs);
+	//optional point to 2nd crop if needed
+	if (batch==0) {
+	ans=getBoolean("Would you like to remove edges or non-colony spots?");
+		if (ans==1) {
+			setTool("freehand");
+			setBackgroundColor(255, 255, 255);
+			waitForUser("Crop image", "Draw around colonies with freehand and command will clear outside.");
+			run("Clear Outside");
+			}
 	}
+	if (filter==1) {
+		close();
+	}
+	run("Open Next");
 }
 close(name); // it close the image at the end of analysis
 
