@@ -13,7 +13,7 @@
 Dialog.create("Settings");
 	Dialog.addMessage("Choose your options!");
 	Dialog.addCheckbox("Batch mode", false);
-	Dialog.addMessage("Use if colonies are less than 1mm in diameter");
+	Dialog.addMessage("Use if colonies are less than 1mm in diameter (like: Christensenellaceae)");
 	Dialog.addCheckbox("Laplacian filter", false);
 Dialog.show();
 
@@ -101,9 +101,19 @@ for (i = 0; i < lengthOf(list); i++) {
 		run("Top Hat...");
 	}
 	// set Threshold	
-	run("Threshold...");
-	setAutoThreshold("Otsu");
-	waitForUser("set Threshold..", "I selected almost all colony.");// itt kell még kivédeni az elbaszást
+	if (filter==0) {
+		setAutoThreshold("Otsu");
+		run("Threshold...");
+		waitForUser("set Threshold..", "I selected almost all colony.");
+	}
+	
+	if (filter==1) {
+		run("Invert");
+		setAutoThreshold("Otsu");
+		run("Threshold...");
+		waitForUser("set Threshold..", "I selected almost all colony.");
+	}
+	
 	// count colonies with analyse particles
 	run("Convert to Mask");
 	run("Watershed");
@@ -111,32 +121,39 @@ for (i = 0; i < lengthOf(list); i++) {
 	run("Analyze Particles...", "size=&s-&l  circularity=0.6-1.00 show=Overlay summarize overlay");
 	
 	//check the result 
-	choose=newArray("add ROI a few", "Analyze Part... again", "freehand tool", "minden fasza" );
-	Dialog.create("Check the result!");
-		Dialog.addRadioButtonGroup("Choose an option!", choose, 4, 1, "minden fasza");
-		
-	Dialog.show();
-	print("válasz: "+Dialog.getRadioButton);
-	 
-	good=getBoolean ("Is it good?"); // e helyett legyen egy választás fusson freehand vagy rio add vagy analyz p  again 
-	while (good==0) {
-		run("Analyze Particles...");
-		good=getBoolean ("Is it good?");
-	}
+	ans=1;
+	while (ans!="all Good!") {
+		choose=newArray("add few ROI not working!!! ", "Analyze Part... again", "freehand tool", "all Good!" );
+		Dialog.create("Check the result!");
+			Dialog.addRadioButtonGroup("Choose an option!", choose, 4, 1, "all Good!");
+		Dialog.show();
 	
-	//run("To ROI Manager");
-	//nROIs = roiManager("count");
-	//print(nROIs);
-	//optional point to 2nd crop if needed
-	if (batch==0) {
-	ans=getBoolean("Would you like to remove edges or non-colony spots?");
-		if (ans==1) {
+		ans=Dialog.getRadioButton();
+		print(ans);
+	
+		if (ans=="freehand tool") {
 			setTool("freehand");
 			setBackgroundColor(255, 255, 255);
 			waitForUser("Crop image", "Draw around colonies with freehand and command will clear outside.");
 			run("Clear Outside");
-			}
+			run("Analyze Particles...");
+		}
+			
+		 else if (ans=="Analyze Part... again") {
+			run("Analyze Particles...");
+		}
+		
+		//else if (ans=="add few ROI"){
+		//	run("ROI Manager...");
+		//	run("To ROI Manager");
+		//	setTool("oval");
+		//	waitForUser("Add missed colonies to ROI via ROImanager then OK")
+		//	nROIs = roiManager("count");
+		//	print(nROIs);
+		//	run("Summarize");
+	//	}
 	}
+		
 	if (filter==1) {
 		close();
 	}
