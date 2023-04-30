@@ -52,6 +52,7 @@ run("FeatureJ Options", "progress log");
 	print("largest colony" +area2);
 		l=area2;
 }
+// area settings
 for (i = 0; i < lengthOf(list); i++) {
 	filename = list[i];
 	print(filename);
@@ -118,12 +119,12 @@ for (i = 0; i < lengthOf(list); i++) {
 	run("Convert to Mask");
 	run("Watershed");
 	//it's run automaticlly with the values from the first step
-	run("Analyze Particles...", "size=&s-&l  circularity=0.6-1.00 show=Overlay summarize overlay");
+	run("Analyze Particles...", "size=&s-&l  circularity=0.6-1.00 show=Overlay summarize overlay add");
 	
 	//check the result 
 	ans=1;
 	while (ans!="all Good!") {
-		choose=newArray("add few ROI not working!!! ", "Analyze Part... again", "freehand tool", "all Good!" );
+		choose=newArray("add few ROI", "Analyze Part... again", "freehand tool", "all Good!" );
 		Dialog.create("Check the result!");
 			Dialog.addRadioButtonGroup("Choose an option!", choose, 4, 1, "all Good!");
 		Dialog.show();
@@ -143,15 +144,15 @@ for (i = 0; i < lengthOf(list); i++) {
 			run("Analyze Particles...");
 		}
 		
-		//else if (ans=="add few ROI"){
-		//	run("ROI Manager...");
-		//	run("To ROI Manager");
-		//	setTool("oval");
-		//	waitForUser("Add missed colonies to ROI via ROImanager then OK")
-		//	nROIs = roiManager("count");
-		//	print(nROIs);
-		//	run("Summarize");
-	//	}
+		else if (ans=="add few ROI"){
+			selectWindow(name);
+			roiManager("Add");
+			setTool("oval");
+			waitForUser("Add missed colonies to ROI via ROImanager then OK")
+			nROIs = roiManager("count");
+			print(nROIs);
+			run("Summarize");
+		}
 	}
 		
 	if (filter==1) {
