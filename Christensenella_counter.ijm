@@ -28,19 +28,22 @@ print("refrence picture:" +name);
 dir=getInfo("image.directory");
 list=getFileList(dir);
 run("FeatureJ Options", "progress log");
-if (batch==1) {
+
+if (batch==1) {
 	// the size selection need to just once
 	// Draw around a small colony 
 	setTool("oval");
 	waitForUser("Select smallest colony.");
 	getStatistics(area1);
-	while (area1 > 2000) {//error checking
+	
+while (area1 > 2000) {//error checking
 			setTool("oval");
 			waitForUser("WARNING!!!", "Missing selected colony!");
 			getStatistics(area1);
 		}
 	print("smallest colony" +area1);
-		s=area1;	
+		s=area1;
+	
 	// Draw around large colony 
 	waitForUser("Select largest colony.");
 	getStatistics(area2);
@@ -119,7 +122,8 @@ for (i = 0; i < lengthOf(list); i++) {
 	run("Convert to Mask");
 	run("Watershed");
 	//it's run automaticlly with the values from the first step
-	run("Analyze Particles...", "size=&s-&l  circularity=0.6-1.00 show=Overlay summarize overlay add");
+	run("Analyze Particles...", "size=&s-&l  circularity=0.6-1.00 show=Overlay summarize overlay add")
+;
 	
 	//check the result 
 	ans=1;
@@ -182,5 +186,6 @@ if (isOpen("Summary")==true){ //error checking
 
 
 
+git trial
 
 
